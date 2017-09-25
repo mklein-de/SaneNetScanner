@@ -332,7 +332,7 @@ NSString* kSaneBottomRightY = (NSString*)CFSTR(SANE_NAME_SCAN_BR_Y);
         }
     }
     else {
-        Log(@"Unsuported set type.");
+        Log(@"Unsupported set type.");
     }
 }
 

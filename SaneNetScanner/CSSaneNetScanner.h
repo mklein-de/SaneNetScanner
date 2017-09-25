@@ -53,7 +53,7 @@
 - (ICAError) openSession:(ICD_ScannerOpenSessionPB*)params;
 - (ICAError) closeSession:(ICD_ScannerCloseSessionPB*)params;
 
-- (ICAError) addPropertiesToDictitonary:(NSMutableDictionary*)dict;
+- (ICAError) addPropertiesToDictionary:(NSMutableDictionary*)dict;
 
 - (ICAError) getParameters:(ICD_ScannerGetParametersPB*)params;
 - (ICAError) setParameters:(ICD_ScannerSetParametersPB*)params;

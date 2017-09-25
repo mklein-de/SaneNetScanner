@@ -124,7 +124,7 @@ ICAError ICD_ScannerAddPropertiesToCFDictionary(ScannerObjectInfo* objectInfo,
 {
     CSSaneNetScanner* scanner = (__bridge CSSaneNetScanner*)(void*)(objectInfo->privateData);
     
-    return [scanner addPropertiesToDictitonary:(__bridge NSMutableDictionary*)dict];
+    return [scanner addPropertiesToDictionary:(__bridge NSMutableDictionary*)dict];
 }
 
 ICAError ICD_ScannerOpenSession(const ScannerObjectInfo* deviceObjectInfo,

@@ -154,7 +154,7 @@ typedef enum {
     return noErr;
 }
 
-- (ICAError) addPropertiesToDictitonary:(NSMutableDictionary*)dict
+- (ICAError) addPropertiesToDictionary:(NSMutableDictionary*)dict
 {    
     // Add kICAUserAssignedDeviceNameKey.  Since this key is a simple NSString,
     // the value may be of any length.  This key supercedes any name already
@@ -165,7 +165,7 @@ typedef enum {
     // as a backing store for image io
     dict[@"supportsICARawFileFormat"] = @1;
     
-    Log(@"addPropertiesToDictitonary:%@", dict);
+    Log(@"addPropertiesToDictionary:%@", dict);
     
     return noErr;
 }
