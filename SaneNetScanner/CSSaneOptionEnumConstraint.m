@@ -68,4 +68,9 @@
     return [NSString stringWithFormat:@"<%@:%p> %@", NSStringFromClass([self class]), self, self.values];
 }
 
+- (void) addToDeviceDictionary:(NSMutableDictionary*)dict {
+    dict[@"type"] = @"TWON_ENUMERATION";
+    dict[@"value"] = self.values;
+}
+
 @end

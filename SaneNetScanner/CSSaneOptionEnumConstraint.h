@@ -14,4 +14,6 @@
 
 @property (nonatomic, copy, readonly) NSArray* values;
 
+- (void) addToDeviceDictionary:(NSMutableDictionary*)dict;
+
 @end

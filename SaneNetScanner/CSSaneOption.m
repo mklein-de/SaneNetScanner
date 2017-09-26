@@ -55,7 +55,7 @@ NSString* kSaneBottomRightY = (NSString*)CFSTR(SANE_NAME_SCAN_BR_Y);
             break;
 
         // Discard group
-        if (descriptor->type == SANE_TYPE_GROUP)
+        if (!descriptor->name || descriptor->type == SANE_TYPE_GROUP)
             continue;
 
         option = [[self alloc] initWithHandle:handle
