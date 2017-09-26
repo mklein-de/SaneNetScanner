@@ -81,9 +81,9 @@ typedef enum {
     self = [super init];
     if (self) {
         Log(@"Params %@", params);
-        
+
         self.open = NO;
-        self.saneHandle = 0;        
+        self.saneHandle = 0;
         self.prettyName = params[(NSString*)kICABonjourServiceNameKey];
         self.deviceName = [[NSString alloc] initWithData:params[(NSString*)kICABonjourTXTRecordKey][@"deviceName"]
                                              encoding:NSUTF8StringEncoding];
@@ -110,17 +110,17 @@ typedef enum {
 {
     Log(@"Open session");
     if (self.open)
-        return kICAInvalidSessionErr;    
-    
+        return kICAInvalidSessionErr;
+
     SANE_Handle handle;
     SANE_Status status;
-    
+
     for (NSString* address in self.saneAdresses) {
         NSString* fullName = [NSString stringWithFormat:@"%@:%@", address, self.deviceName];
-        
+
         Log(@"Try open to %@", fullName);
         status = sane_open([fullName UTF8String], &handle);
-        
+
         // If open succeeded we can quit tring
         if (status == SANE_STATUS_GOOD)
             break;
@@ -128,11 +128,11 @@ typedef enum {
             Log(@"Failed width %s", sane_strstatus(status));
         }
     }
-    
+
     if (status == SANE_STATUS_GOOD) {
         self.open = YES;
         self.saneHandle = handle;
-        
+
         return noErr;
     }
     else {
@@ -146,27 +146,27 @@ typedef enum {
 
     if (!self.open)
         return kICAInvalidSessionErr;
-    
+
     sane_close(self.saneHandle);
     self.saneHandle = 0;
     self.open = NO;
-    
+
     return noErr;
 }
 
 - (ICAError) addPropertiesToDictionary:(NSMutableDictionary*)dict
-{    
+{
     // Add kICAUserAssignedDeviceNameKey.  Since this key is a simple NSString,
     // the value may be of any length.  This key supercedes any name already
     // provided in the device information before, which is limited to 32 characters.
     dict[(NSString*)kICAUserAssignedDeviceNameKey] = self.prettyName;
-    
+
     // Add key indicating that the module supports using the ICA Raw File
     // as a backing store for image io
     dict[@"supportsICARawFileFormat"] = @1;
-    
+
     Log(@"addPropertiesToDictionary:%@", dict);
-    
+
     return noErr;
 }
 
@@ -174,10 +174,12 @@ typedef enum {
 {
     Log(@"Get params");
     NSMutableDictionary* dict = (__bridge NSMutableDictionary*)(params->theDict);
-    
+
     if (!dict)
         return paramErr;
-    
+
+    NSMutableDictionary* deviceDict = [NSMutableDictionary dictionary];
+    /*
     NSMutableDictionary* deviceDict = [@{
     @"functionalUnits": @{
     @"availableFunctionalUnitTypes" : @[ @0 ]
@@ -185,29 +187,30 @@ typedef enum {
     @"selectedFunctionalUnitType": @0,
 
     @"ICAP_SUPPORTEDSIZES": @{ @"current": @1, @"default": @1, @"type": @"TWON_ENUMERATION", @"value": @[ @1, @2, @3, @4, @5, @10, @0 ]},
-    
+
     @"ICAP_UNITS": @{ @"current": @0, @"default": @0, @"type": @"TWON_ENUMERATION", @"value": @[ @0, @1, @5 ] },
-    
+
     } mutableCopy];
-        
+    */
+
     self.saneOptions = [CSSaneOption saneOptionsForHandle:self.saneHandle];
-    
+
     // Export the resolution
     if (self.saneOptions[kSaneScanResolution]) {
         NSMutableDictionary* d = [NSMutableDictionary dictionary];
         CSSaneOption* option = self.saneOptions[kSaneScanResolution];
-        
+
         [option.constraint addToDeviceDictionary:d];
         d[@"current"] = option.value;
         d[@"default"] = option.value;
-        
+
         deviceDict[@"ICAP_XRESOLUTION"] = d;
         deviceDict[@"ICAP_YRESOLUTION"] = d;
     }
     else {
         Log(@"WARN: scanner does not support resolutions!?");
     }
-    
+
     // Export the physical width
     for (NSString* name in @[ kSaneTopLeftX, kSaneBottomRightX ]) {
         if (self.saneOptions[name]) {
@@ -215,7 +218,7 @@ typedef enum {
             CSSaneOption* option = self.saneOptions[name];
             CSSaneOptionRangeConstraint* constraint = (CSSaneOptionRangeConstraint*)option.constraint;
             double width = ([constraint.maxValue doubleValue] - [constraint.minValue doubleValue])/25.4;
-            
+
             // If already exists look if the new width is smaller and update if so
             if (deviceDict[@"ICAP_PHYSICALWIDTH"]) {
                 if ([deviceDict[@"ICAP_PHYSICALWIDTH"][@"value"] doubleValue] > width) {
@@ -234,7 +237,7 @@ typedef enum {
             }
         }
     }
-    
+
     // Export the physical height
     for (NSString* name in @[ kSaneTopLeftY, kSaneBottomRightY ]) {
         if (self.saneOptions[name]) {
@@ -242,7 +245,7 @@ typedef enum {
             CSSaneOption* option = self.saneOptions[name];
             CSSaneOptionRangeConstraint* constraint = (CSSaneOptionRangeConstraint*)option.constraint;
             double height = ([constraint.maxValue doubleValue] - [constraint.minValue doubleValue])/25.4;
-            
+
             // If already exists look if the new width is smaller and update if so
             if (deviceDict[@"ICAP_PHYSICALHEIGHT"]) {
                 if ([deviceDict[@"ICAP_PHYSICALHEIGHT"][@"value"] doubleValue] > height) {
@@ -261,7 +264,7 @@ typedef enum {
             }
         }
     }
-    
+
     // The bitdepth was not an option from the device
     // now we have to infer from the scan mode.
     if (deviceDict[@"ICAP_BITDEPTH"] == nil) {
@@ -273,12 +276,12 @@ typedef enum {
             @"value": @[ @1, @8 ]
         };
     }
-    
+
     dict[@"device"] = deviceDict;
     self.deviceProperties = deviceDict;
-    
+
     Log(@"Updated parameters %@", dict);
-    
+
     return noErr;
 }
 
@@ -287,28 +290,28 @@ typedef enum {
     Log(@"Set params: %@", params->theDict);
     NSDictionary* dict = ((__bridge NSDictionary *)(params->theDict))[@"userScanArea"];
 
-    
+
     {
         NSString* documentPath = dict[@"document folder"];
         documentPath = [documentPath stringByAppendingPathComponent:dict[@"document name"]];
         documentPath = [documentPath stringByAppendingPathExtension:dict[@"document extension"]];
-        
+
         if (documentPath) {
             self.documentURL = [NSURL fileURLWithPath:documentPath];
             self.documentType = dict[@"document format"];
         }
-        
+
         // RAW is not requested, so we need a temporary raw file
         if (![self.documentType isEqualToString:@"com.apple.ica.raw"] && !self.rawFileURL) {
             self.rawFileURL = [NSURL fileURLWithPath:[NSTemporaryDirectory() stringByAppendingFormat:@"scan-raw-%@.ica", [[NSUUID UUID] UUIDString]]];
         }
     }
-        
+
     int unit = [dict[@"ICAP_UNITS"][@"value"] intValue];
-    
+
     if (dict[@"ColorSyncMode"]) {
         CSSaneOption* option = self.saneOptions[kSaneScanMode];
-        
+
         NSString* syncMode = dict[@"ColorSyncMode"];
         if ([syncMode isEqualToString:@"scanner.reflective.RGB.positive"]) {
             option.value = @"Color";
@@ -320,11 +323,11 @@ typedef enum {
             Log(@"Unkown colorsyncmode %@", syncMode);
         }
     }
-    
+
     // X and Y resolution are always equal
     if (dict[@"ICAP_XRESOLUTION"] || dict[@"ICAP_XRESOLUTION"]) {
         CSSaneOption* option = self.saneOptions[kSaneScanResolution];
-        
+
         if (unit == 1 /* Centimeter */) {
             // Convert dpcm to dpi
             // 1 dpcm = 2,54 dpi
@@ -338,7 +341,7 @@ typedef enum {
             Log(@"Unsupported unit");
         }
     }
-    
+
     if (dict[@"scan mode"]) {
         CSSaneOption* option = self.saneOptions[kSanePreview];
 
@@ -349,7 +352,7 @@ typedef enum {
             option.value = @0;
         }
     }
-    
+
     if (dict[@"offsetX"]) {
         CSSaneOption* option = self.saneOptions[kSaneTopLeftX];
 
@@ -362,10 +365,10 @@ typedef enum {
             option.value = @([dict[@"offsetX"] doubleValue] * 25.4);
         }
     }
-    
+
     if (dict[@"offsetY"]) {
         CSSaneOption* option = self.saneOptions[kSaneTopLeftY];
-        
+
         if (unit == 1 /* Centimeter */) {
             // Convert cm to mm
             option.value = @([dict[@"offsetY"] doubleValue] * 10);
@@ -375,7 +378,7 @@ typedef enum {
             option.value = @([dict[@"offsetY"] doubleValue] * 25.4);
         }
     }
-    
+
     if (dict[@"width"]) {
         CSSaneOption* option = self.saneOptions[kSaneBottomRightX];
 
@@ -389,10 +392,10 @@ typedef enum {
             option.value = @(value * 25.4);
         }
     }
-    
+
     if (dict[@"height"]) {
         CSSaneOption* option = self.saneOptions[kSaneBottomRightY];
-        
+
         double value = [dict[@"offsetY"] doubleValue] + [dict[@"height"] doubleValue];
         if (unit == 1 /* Centimeter */) {
             // Convert cm to mm
@@ -403,7 +406,7 @@ typedef enum {
             option.value = @(value * 25.4);
         }
     }
-        
+
     if ([dict[@"progressNotificationWithData"] boolValue]) {
         self.progressNotifications = ProgressNotificationsWithData;
     }
@@ -413,21 +416,21 @@ typedef enum {
     else {
         self.progressNotifications = ProgressNotificationsNone;
     }
-    
+
     if ([dict[@"scan mode"] isEqualToString:@"overview"])
         self.produceFinalScan = NO;
     else
         self.produceFinalScan = YES;
-    
+
     self.colorSyncMode = dict[@"ColorSyncMode"];
-    
+
     return noErr;
 }
 
 - (ICAError) status:(ICD_ScannerStatusPB*)params
 {
     Log( @"status");
-    
+
     return paramErr;
 }
 
@@ -436,31 +439,31 @@ typedef enum {
     Log(@"Start");
     SANE_Status status;
     SANE_Parameters parameters;
-        
+
     [self showWarmUpMessage];
     Log(@"sane_start");
     status = sane_start(self.saneHandle);
-    
+
     if (status != SANE_STATUS_GOOD) {
         Log(@"sane_start failed: %s", sane_strstatus(status));
         return kICADeviceInternalErr;
     }
-    
+
     Log(@"sane_get_parameters");
     status = sane_get_parameters(self.saneHandle, &parameters);
-    
+
     if (status != SANE_STATUS_GOOD) {
         Log(@"sane_get_parameters failed: %s", sane_strstatus(status));
         sane_cancel(self.saneHandle);
         return kICADeviceInternalErr;
     }
     Log(@"sane_get_parameters: last_frame=%u, bytes_per_line=%u, pixels_per_line=%u, lines=%u, depth=%u", parameters.last_frame, parameters.bytes_per_line, parameters.pixels_per_line, parameters.lines, parameters.depth);
-    
+
     [self doneWarmUpMessage];
-    
+
     Log(@"Prepare raw file");
     NSFileHandle* rawFileHandle;
-    
+
     if (![self.documentType isEqualToString:@"com.apple.ica.raw"]) {
         [[NSFileManager defaultManager] createFileAtPath:[self.rawFileURL path]
                                                 contents:nil
@@ -473,52 +476,52 @@ typedef enum {
                                               attributes:nil];
         rawFileHandle = [NSFileHandle fileHandleForWritingAtPath:[self.documentURL path]];
     }
-    
+
     [self createColorSpaceWithSaneParameters:&parameters];
-    
+
     // Write header
     [self writeHeaderToFile:rawFileHandle
          withSaneParameters:&parameters];
 
-    
+
     Log(@"Prepare buffers");
     int bufferSize;
     int bufferdRows;
     NSMutableData* buffer;
-    
+
     // Choose buffer size
     //
     //  Use a buffer size around 50KiB.
     //  the size will be aligned to row boundries
     bufferdRows = MIN(500*1025 / parameters.bytes_per_line, parameters.lines);
     bufferSize = bufferdRows * parameters.bytes_per_line;
-    
+
     buffer = [NSMutableData dataWithLength:bufferSize];
-    
+
     Log(@"Choose to buffer %u rows (%u in size)", bufferdRows, bufferSize);
-    
+
     Log(@"Begin reading");
     int row = 0;
-    
+
     do {
         // Fill the buffer
         unsigned char* b = [buffer mutableBytes];
         int filled = 0;
-        
+
         do {
             SANE_Int readBytes;
             status = sane_read(self.saneHandle,
                                &b[filled],
                                bufferSize - filled,
                                &readBytes);
-            
+
             if (status == SANE_STATUS_EOF)
                 break;
             else if (status != SANE_STATUS_GOOD) {
                 NSLog(@"Read error");
                 return kICADeviceInternalErr;
             }
-            
+
             filled += readBytes;
         } while (filled < bufferSize);
         // Shrink the buffer if not fully filled
@@ -529,7 +532,7 @@ typedef enum {
         if (self.produceFinalScan) {
             [rawFileHandle writeData:buffer];
         }
-        
+
         // Notify the image capture kit that we made progress
         if (self.progressNotifications != ProgressNotificationsNone) {
             ICASendNotificationPB notePB = {};
@@ -537,9 +540,9 @@ typedef enum {
                                       (id)kICANotificationICAObjectKey: @(self.scannerObjectInfo->icaObject),
                                       (id)kICANotificationTypeKey: (id)kICANotificationTypeScanProgressStatus
                                       } mutableCopy];
-            
+
             notePB.notificationDictionary = (__bridge CFMutableDictionaryRef)d;
-            
+
             // Add image with data
             if (self.progressNotifications == ProgressNotificationsWithData) {
                 ICDAddImageInfoToNotificationDictionary(notePB.notificationDictionary,
@@ -562,7 +565,7 @@ typedef enum {
                                                         0,
                                                         NULL);
             }
-            
+
             // Send the progress and check if the user
             // canceled the scan
             if (ICDSendNotificationAndWaitForReply(&notePB) == noErr)
@@ -570,7 +573,7 @@ typedef enum {
                 if (notePB.replyCode == userCanceledErr) {
                     Log(@"User canceled. Clean up...");
                     sane_cancel(self.saneHandle);
-                    
+
                     [self sendTransactionCanceledMessage];
                     return noErr;
                 }
@@ -589,13 +592,13 @@ typedef enum {
                    saneParameters:&parameters];
         }
     }
-    
+
     sane_cancel(self.saneHandle);
-    
+
     Log(@"Done...");
     [self pageDoneMessage];
     [self scanDoneMessage];
-    
+
     return noErr;
 }
 
@@ -603,12 +606,12 @@ typedef enum {
 {
     NSString* scanMode = [self.saneOptions[kSaneScanMode] value];
     UInt32 numberOfComponents = 0;
-    
+
     if ([scanMode isEqualToString:@"Color"])
         numberOfComponents = 3;
     else if ([scanMode isEqualToString:@"Gray"] || [scanMode isEqualToString:@"Lineart"])
         numberOfComponents = 1;
-    
+
     return numberOfComponents;
 }
 
@@ -625,8 +628,8 @@ typedef enum {
             (id)kICANotificationSubTypeKey: (id)kICANotificationSubTypeWarmUpStarted
     } mutableCopy];
     notePB.notificationDictionary = (__bridge CFMutableDictionaryRef)dict;
-    
-	ICDSendNotification( &notePB );
+
+    ICDSendNotification( &notePB );
 }
 
 - (void) doneWarmUpMessage
@@ -638,8 +641,8 @@ typedef enum {
         (id)kICANotificationSubTypeKey: (id)kICANotificationSubTypeWarmUpDone
     } mutableCopy];
     notePB.notificationDictionary = (__bridge CFMutableDictionaryRef)dict;
-    
-	ICDSendNotification(&notePB);
+
+    ICDSendNotification(&notePB);
 }
 
 - (void) pageDoneMessage
@@ -650,12 +653,12 @@ typedef enum {
         (id)kICANotificationTypeKey: (id)kICANotificationTypeScannerPageDone,
     } mutableCopy];
     notePB.notificationDictionary = (__bridge CFMutableDictionaryRef)dict;
-    
+
     if (self.documentURL)
         ((__bridge NSMutableDictionary*)notePB.notificationDictionary)[(id)kICANotificationScannerDocumentNameKey] = [self.documentURL path];
 
 
-	ICDSendNotification( &notePB );
+    ICDSendNotification( &notePB );
 }
 
 - (void) scanDoneMessage
@@ -666,8 +669,8 @@ typedef enum {
         (id)kICANotificationTypeKey: (id)kICANotificationTypeScannerScanDone
     } mutableCopy];
     notePB.notificationDictionary = (__bridge CFMutableDictionaryRef)dict;
-    
-	ICDSendNotification( &notePB );
+
+    ICDSendNotification( &notePB );
 }
 
 - (void) sendTransactionCanceledMessage
@@ -678,8 +681,8 @@ typedef enum {
         (id)kICANotificationTypeKey: (id)kICANotificationTypeTransactionCanceled
     } mutableCopy];
     notePB.notificationDictionary = (__bridge CFMutableDictionaryRef)dict;
-    
-	ICDSendNotification( &notePB );
+
+    ICDSendNotification( &notePB );
 }
 
 @end
@@ -689,7 +692,7 @@ typedef enum {
 - (void) createColorSpaceWithSaneParameters:(SANE_Parameters*)parameters
 {
     NSString* profilePath = [NSTemporaryDirectory() stringByAppendingFormat:@"vs-%d",getpid()];
-    
+
     self.colorSpace = ICDCreateColorSpace([self numberOfComponents] * parameters->depth,
                                           [self numberOfComponents],
                                           self.scannerObjectInfo->icaObject,
@@ -702,7 +705,7 @@ typedef enum {
         withSaneParameters:(SANE_Parameters*)parameters
 {
     ICARawFileHeader h;
-    
+
     h.imageDataOffset      = sizeof(ICARawFileHeader);
     h.version              = 1;
     h.imageWidth           = parameters->pixels_per_line;
@@ -716,7 +719,7 @@ typedef enum {
     h.dpi                  = 75;
     h.orientation          = 1;
     strlcpy(h.colorSyncModeStr, [self.colorSyncMode UTF8String], sizeof(h.colorSyncModeStr));
-    
+
     [handle writeData:[NSData dataWithBytesNoCopy:&h
                                            length:sizeof(ICARawFileHeader)
                                      freeWhenDone:NO]];
@@ -730,7 +733,7 @@ typedef enum {
     CGImageDestinationRef dest = CGImageDestinationCreateWithURL((__bridge CFURLRef)destUrl, (__bridge CFStringRef)type, 1, nil);
     CGDataProviderRef provider = [CSSequentialDataProvider createDataProviderWithFileAtURL:url
                                                                              andHardOffset:sizeof(ICARawFileHeader)];
-    
+
     CGImageRef image = CGImageCreate(parameters->pixels_per_line,
                                      parameters->lines,
                                      parameters->depth,
@@ -741,10 +744,10 @@ typedef enum {
                                      provider,
                                      NULL,
                                      NO, kCGRenderingIntentDefault);
-    
+
     CGImageDestinationAddImage(dest, image, nil);
-    
-    
+
+
     CGImageDestinationFinalize(dest);
 }
 

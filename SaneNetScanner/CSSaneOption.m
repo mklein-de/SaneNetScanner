@@ -43,31 +43,31 @@ NSString* kSaneBottomRightY = (NSString*)CFSTR(SANE_NAME_SCAN_BR_Y);
     NSParameterAssert(handle != 0);
     SANE_Int number;
     NSMutableDictionary* options = [NSMutableDictionary dictionary];
-    
+
     for (number = 0;; number++) {
         const SANE_Option_Descriptor* descriptor;
         CSSaneOption* option;
-        
+
         descriptor = sane_get_option_descriptor(handle, number);
-        
+
         // Last descriptor
         if (descriptor == NULL)
             break;
-        
+
         // Discard group
         if (descriptor->type == SANE_TYPE_GROUP)
             continue;
-        
+
         option = [[self alloc] initWithHandle:handle
                                        number:number
                                 andDescriptor:descriptor];
-        
+
         NSAssert(option, @"Could not create sane options wrapper");
         NSAssert(options[option.name] == nil, @"Option with that name already exists");
-        
+
         options[option.name] = option;
     }
-    
+
     return [options copy];
 }
 
@@ -80,13 +80,13 @@ NSString* kSaneBottomRightY = (NSString*)CFSTR(SANE_NAME_SCAN_BR_Y);
     self = [super init];
     if (self) {
         self.name = @(descriptor->name);
-        
+
         self.descriptor = descriptor;
         self.saneHandle = handle;
         self.saneOptionNumber = number;
-        
+
         [self _fetchValue];
-        
+
         self.constraint = [CSSaneOptionConstraint constraintWithDescriptor:self.descriptor];
     }
     return self;
@@ -96,7 +96,7 @@ NSString* kSaneBottomRightY = (NSString*)CFSTR(SANE_NAME_SCAN_BR_Y);
 {
     if ([value isEqual:_value])
         return;
-    
+
     _value = value;
     [self _setValue];
 }
@@ -106,21 +106,21 @@ NSString* kSaneBottomRightY = (NSString*)CFSTR(SANE_NAME_SCAN_BR_Y);
     if (self.descriptor->type == SANE_TYPE_FIXED) {
         SANE_Fixed *values;
         SANE_Status status;
-        
+
         values = malloc(self.descriptor->size);
-        
+
         assert(values);
-        
+
         status = sane_control_option(self.saneHandle,
                                      self.saneOptionNumber,
                                      SANE_ACTION_GET_VALUE,
                                      values, 0);
-        
+
         if (status != SANE_STATUS_GOOD) {
             Log(@"Failed get %@: %s", self, sane_strstatus(status));
             return;
         }
-        
+
         // Only one value
         if (self.descriptor->size == sizeof(SANE_Int)) {
             _value = @SANE_UNFIX(values[0]);
@@ -129,35 +129,35 @@ NSString* kSaneBottomRightY = (NSString*)CFSTR(SANE_NAME_SCAN_BR_Y);
         else {
             NSUInteger numberOfValues = self.descriptor->size/sizeof(SANE_Int);
             NSMutableArray* valueArray = [NSMutableArray arrayWithCapacity:numberOfValues];
-            
+
             for (NSUInteger i = 0; i < numberOfValues; i++) {
                 [valueArray addObject:
                  @SANE_UNFIX(values[i])];
             }
-            
+
             _value = valueArray;
         }
-        
+
         free(values);
     }
     else if (self.descriptor->type == SANE_TYPE_INT) {
         SANE_Int *values;
         SANE_Status status;
-        
+
         values = malloc(self.descriptor->size);
-        
+
         assert(values);
-        
+
         status = sane_control_option(self.saneHandle,
                                      self.saneOptionNumber,
                                      SANE_ACTION_GET_VALUE,
                                      values, 0);
-        
+
         if (status != SANE_STATUS_GOOD) {
             Log(@"Failed get %@: %s", self, sane_strstatus(status));
             return;
         }
-        
+
         // Only one value
         if (self.descriptor->size == sizeof(SANE_Int)) {
             _value = @(values[0]);
@@ -166,35 +166,35 @@ NSString* kSaneBottomRightY = (NSString*)CFSTR(SANE_NAME_SCAN_BR_Y);
         else {
             NSUInteger numberOfValues = self.descriptor->size/sizeof(SANE_Int);
             NSMutableArray* valueArray = [NSMutableArray arrayWithCapacity:numberOfValues];
-            
+
             for (NSUInteger i = 0; i < numberOfValues; i++) {
                 [valueArray addObject:
                  @(values[i])];
             }
-            
+
             _value = valueArray;
         }
-        
+
         free(values);
     }
     else if (self.descriptor->type == SANE_TYPE_STRING) {
         SANE_String value;
         SANE_Status status;
-        
+
         value = malloc(self.descriptor->size);
-        
+
         assert(value);
-        
+
         status = sane_control_option(self.saneHandle,
                                      self.saneOptionNumber,
                                      SANE_ACTION_GET_VALUE,
                                      value, 0);
-        
+
         if (status != SANE_STATUS_GOOD) {
             Log(@"Failed get %@: %s", self, sane_strstatus(status));
             return;
         }
-        
+
         _value = @(value);
         free(value);
     }
@@ -203,19 +203,19 @@ NSString* kSaneBottomRightY = (NSString*)CFSTR(SANE_NAME_SCAN_BR_Y);
         SANE_Status status;
 
         values = malloc(self.descriptor->size);
-        
+
         assert(values);
-        
+
         status = sane_control_option(self.saneHandle,
                                      self.saneOptionNumber,
                                      SANE_ACTION_GET_VALUE,
                                      values, 0);
-        
+
         if (status != SANE_STATUS_GOOD) {
             Log(@"Failed get %@: %s", self, sane_strstatus(status));
             return;
         }
-        
+
         // Only one value
         if (self.descriptor->size == sizeof(SANE_Bool)) {
             _value = @(values[0]);
@@ -224,15 +224,15 @@ NSString* kSaneBottomRightY = (NSString*)CFSTR(SANE_NAME_SCAN_BR_Y);
         else {
             NSUInteger numberOfValues = self.descriptor->size/sizeof(SANE_Int);
             NSMutableArray* valueArray = [NSMutableArray arrayWithCapacity:numberOfValues];
-            
+
             for (NSUInteger i = 0; i < numberOfValues; i++) {
                 [valueArray addObject:
                  @(values[i])];
             }
-            
+
             _value = valueArray;
         }
-        
+
         free(values);
     }
     else {
@@ -246,22 +246,22 @@ NSString* kSaneBottomRightY = (NSString*)CFSTR(SANE_NAME_SCAN_BR_Y);
         SANE_String str;
         SANE_Status status;
         NSString* string = self.value;
-        
+
         if (![string isKindOfClass:[NSString class]]) {
             Log(@"%@ requires string but is %@", self, self.value);
             return;
         }
-        
+
         str = malloc(self.descriptor->size);
         strncpy(str, [string UTF8String], self.descriptor->size);
-        
+
         Log(@"Set \"%@\" to \"%@\"", self.name, self.value);
         status = sane_control_option(self.saneHandle,
                                      self.saneOptionNumber,
                                      SANE_ACTION_SET_VALUE,
                                      str,
                                      0);
-        
+
         if (status != SANE_STATUS_GOOD) {
             Log(@"Set failed %@: %s", self, sane_strstatus(status));
             return;
@@ -273,17 +273,17 @@ NSString* kSaneBottomRightY = (NSString*)CFSTR(SANE_NAME_SCAN_BR_Y);
             Log(@"Dont support multi-size fixed type set yet.");
             return;
         }
-        
+
         SANE_Fixed value = SANE_FIX([self.value doubleValue]);
         SANE_Status status;
-        
+
         Log(@"Set \"%@\" to \"%@\"", self.name, self.value);
         status = sane_control_option(self.saneHandle,
                                      self.saneOptionNumber,
                                      SANE_ACTION_SET_VALUE,
                                      &value,
                                      0);
-        
+
         if (status != SANE_STATUS_GOOD) {
             Log(@"Set failed %@: %s", self, sane_strstatus(status));
             return;
@@ -294,17 +294,17 @@ NSString* kSaneBottomRightY = (NSString*)CFSTR(SANE_NAME_SCAN_BR_Y);
             Log(@"Dont support multi-size int type set yet.");
             return;
         }
-        
+
         SANE_Int value = [self.value intValue];
         SANE_Status status;
-        
+
         Log(@"Set \"%@\" to \"%@\"", self.name, self.value);
         status = sane_control_option(self.saneHandle,
                                      self.saneOptionNumber,
                                      SANE_ACTION_SET_VALUE,
                                      &value,
                                      0);
-        
+
         if (status != SANE_STATUS_GOOD) {
             Log(@"Set failed %@: %s", self, sane_strstatus(status));
             return;
@@ -315,17 +315,17 @@ NSString* kSaneBottomRightY = (NSString*)CFSTR(SANE_NAME_SCAN_BR_Y);
             Log(@"Dont support multi-size bool type set yet.");
             return;
         }
-        
+
         SANE_Bool value = [self.value intValue];
         SANE_Status status;
-        
+
         Log(@"Set \"%@\" to \"%@\"", self.name, value ? @"true" : @"false");
         status = sane_control_option(self.saneHandle,
                                      self.saneOptionNumber,
                                      SANE_ACTION_SET_VALUE,
                                      &value,
                                      0);
-        
+
         if (status != SANE_STATUS_GOOD) {
             Log(@"Set failed %@: %s", self, sane_strstatus(status));
             return;

@@ -25,7 +25,7 @@
         assert(descriptor->constraint_type == SANE_CONSTRAINT_RANGE);
         assert(descriptor->type == SANE_TYPE_INT ||
                descriptor->type == SANE_TYPE_FIXED);
-        
+
         if (descriptor->type == SANE_TYPE_INT) {
             self.minValue = @(descriptor->constraint.range->min);
             self.maxValue = @(descriptor->constraint.range->max);

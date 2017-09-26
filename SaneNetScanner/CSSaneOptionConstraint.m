@@ -19,7 +19,7 @@
     else if (descriptor->constraint_type == SANE_CONSTRAINT_STRING_LIST ||
              descriptor->constraint_type == SANE_CONSTRAINT_WORD_LIST)
         return [[CSSaneOptionEnumConstraint alloc] initWithDescriptor:descriptor];
-    
+
     return nil;
 }
 

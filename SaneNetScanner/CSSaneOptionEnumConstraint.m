@@ -22,11 +22,11 @@
     if (self) {
         assert(descriptor->constraint_type == SANE_CONSTRAINT_STRING_LIST ||
                descriptor->constraint_type == SANE_CONSTRAINT_WORD_LIST);
-        
+
         if (descriptor->constraint_type == SANE_CONSTRAINT_WORD_LIST) {
             SANE_Word length = descriptor->constraint.word_list[0];
             NSMutableArray* values = [NSMutableArray arrayWithCapacity:length];
-            
+
             for (SANE_Word i = 1; i < length + 1; i++) {
                 if (descriptor->type == SANE_TYPE_FIXED) {
                     [values addObject:@SANE_UNFIX(descriptor->constraint.word_list[i])];
@@ -38,21 +38,21 @@
                     assert(false);
                 }
             }
-            
+
             self.values = values;
         }
         else {
             NSMutableArray* values = [NSMutableArray array];
             const char* const * ptr = descriptor->constraint.string_list;
-            
+
             while (*ptr != NULL) {
                 const char* const str = *ptr;
-                
+
                 [values addObject:@(str)];
-                
+
                 ptr++;
             }
-            
+
             self.values = values;
         }
     }
